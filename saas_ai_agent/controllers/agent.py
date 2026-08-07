@@ -19,6 +19,15 @@ def _verify(body: bytes, signature: str | None) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
+def _verify_bearer(header: str | None) -> bool:
+    if not header or not AGENT_WEBHOOK_SECRET:
+        return False
+    prefix = 'Bearer '
+    if not header.startswith(prefix):
+        return False
+    return hmac.compare_digest(header[len(prefix):], AGENT_WEBHOOK_SECRET)
+
+
 class AgentReplyController(http.Controller):
 
     def _json_response(self, payload, status=200):
@@ -80,3 +89,26 @@ class AgentReplyController(http.Controller):
             return self._json_response({'status': 'error', 'message': 'post failed'}, status=200)
 
         return self._json_response({'status': 'ok'})
+
+    @http.route(
+        '/ai_agent/llm_config',
+        type='http',
+        auth='public',
+        methods=['GET'],
+        csrf=False,
+        save_session=False,
+    )
+    def llm_config(self, **kwargs):
+        """BYOK: the agent pod fetches the tenant's own AI-provider
+        credentials here on each turn instead of a static env var, so a
+        key change in Settings takes effect on the next message with no
+        redeploy. Authenticated the same way as the rest of the
+        odoo<->agent channel (AGENT_WEBHOOK_SECRET) plus the tenant
+        NetworkPolicy — this is not internet-facing in practice, but the
+        key itself never leaves this hop either way.
+        """
+        if not _verify_bearer(request.httprequest.headers.get('Authorization')):
+            return self._json_response({'status': 'error', 'message': 'unauthorized'}, status=401)
+
+        config = request.env['res.config.settings'].sudo()._aei_assistant_resolve_llm_config()
+        return self._json_response(config)

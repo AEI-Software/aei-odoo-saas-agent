@@ -67,6 +67,23 @@ class DiscussChannel(models.Model):
             )
             return
 
+        # BYOK: fail fast with a friendly message instead of round-tripping
+        # to the agent pod just to have its first SDK call fail. Checked
+        # here (not only agent-side) so a misconfigured tenant gets instant
+        # feedback rather than a silent multi-second timeout.
+        llm_config = self.env['res.config.settings'].sudo()._aei_assistant_resolve_llm_config()
+        if not llm_config['configured']:
+            self.with_context(mail_post_autofollow=False).message_post(
+                body=(
+                    "Todavía no configuraste tu API key de IA — anda a "
+                    "Ajustes > AEI Assistant para activarme."
+                ),
+                author_id=bot.id,
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+            )
+            return
+
         raw_key = self.env['saas_ai_agent.session']._issue_key(self, user)
 
         # Fires after the transaction that created `message` commits, so the

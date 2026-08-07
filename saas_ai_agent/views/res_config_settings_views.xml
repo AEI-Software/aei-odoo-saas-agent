@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_res_config_settings_form" model="ir.ui.view">
+        <field name="name">res.config.settings.form.aei.assistant</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='integration']" position="after">
+                <block title="AEI Assistant" name="aei_assistant_settings">
+                    <setting
+                        id="aei_assistant_provider"
+                        string="AI Provider"
+                        help="Bring your own key — aei_assistant runs only against your own API key, never AEI's."
+                    >
+                        <field name="aei_assistant_provider"/>
+                        <div class="content-group mt16" invisible="aei_assistant_provider != 'custom'">
+                            <div class="row">
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_base_url" string="Endpoint URL"/>
+                                <field name="aei_assistant_base_url" placeholder="http://your-ollama-host:11434"/>
+                            </div>
+                        </div>
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_api_key" string="API Key"/>
+                                <field name="aei_assistant_api_key" password="True"/>
+                            </div>
+                            <div class="row">
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_model" string="Model"/>
+                                <field name="aei_assistant_model" placeholder="(provider default)"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
