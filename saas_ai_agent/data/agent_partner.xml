@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Bot partner for the tenant AI agent, same convention mail/data/res_partner_data.xml
+         uses for base.partner_root ("OdooBot"): one dedicated partner, im_status='bot'
+         (see models/res_partner.py), never a new partner per conversation. -->
+    <record id="partner_agent_bot" model="res.partner">
+        <field name="name">AEI Assistant</field>
+        <field name="company_id" eval="False"/>
+        <field name="active">True</field>
+    </record>
+</odoo>
