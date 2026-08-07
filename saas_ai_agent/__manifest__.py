@@ -10,6 +10,7 @@
         'security/ir.model.access.csv',
         'data/agent_partner.xml',
         'views/res_config_settings_views.xml',
+        'views/menu.xml',
     ],
     'installable': True,
     'application': False,

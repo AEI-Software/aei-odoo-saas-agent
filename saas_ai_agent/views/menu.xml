@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="ir_actions_server_open_ai_assistant" model="ir.actions.server">
+        <field name="name">AEI Assistant</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="state">code</field>
+        <field name="code">action = env.user.action_open_ai_assistant_chat()</field>
+    </record>
+
+    <menuitem
+        id="menu_aei_assistant_root"
+        name="AEI Assistant"
+        action="ir_actions_server_open_ai_assistant"
+        sequence="5"
+    />
+
+</odoo>
