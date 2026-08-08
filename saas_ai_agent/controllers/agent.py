@@ -68,6 +68,13 @@ class AgentReplyController(http.Controller):
         if not channel_id or not text:
             return self._json_response({'status': 'error', 'message': 'bad request'}, status=400)
 
+        # If this turn ran on AEI's own trial key (no BYOK configured yet),
+        # record its cost so the next /ai_agent/llm_config check reflects
+        # the updated budget — the agent pod reports what the SDK itself
+        # billed for the turn, Odoo never computes cost independently.
+        if payload.get('trial') and isinstance(payload.get('cost_usd'), (int, float)):
+            request.env['res.config.settings'].sudo()._aei_assistant_record_trial_spend(payload['cost_usd'])
+
         channel = request.env['discuss.channel'].sudo().browse(channel_id).exists()
         if not channel:
             return self._json_response({'status': 'error', 'message': 'unknown channel'}, status=404)

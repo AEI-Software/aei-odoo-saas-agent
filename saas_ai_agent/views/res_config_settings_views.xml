@@ -31,6 +31,22 @@
                             </div>
                         </div>
                     </setting>
+                    <setting
+                        id="aei_assistant_trial"
+                        string="Trial (no key set yet)"
+                        help="Until you set your own key above, the assistant runs on AEI's own trial key, within this budget."
+                        invisible="aei_assistant_api_key"
+                    >
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_trial_used_usd" string="Used so far"/>
+                                <field name="aei_assistant_trial_used_usd" readonly="1"/>
+                                <span class="mx-2">/</span>
+                                <field name="aei_assistant_trial_cap_usd" class="w-25"/>
+                                <span class="col-auto ms-2">USD</span>
+                            </div>
+                        </div>
+                    </setting>
                 </block>
             </xpath>
         </field>

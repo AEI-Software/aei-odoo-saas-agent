@@ -18,6 +18,8 @@ class ResUsers(models.Model):
         mail's own test suite: /odoo/discuss?active_id=discuss.channel_<id>).
         """
         channel = self.env['discuss.channel']._agent_get_or_create_channel(self.env.user)
+        if not channel._agent_has_session():
+            channel._agent_trigger_welcome(self.env.user)
         return {
             'type': 'ir.actions.act_url',
             'url': f'/odoo/discuss?active_id=discuss.channel_{channel.id}',

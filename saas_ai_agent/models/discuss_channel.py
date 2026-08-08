@@ -39,6 +39,15 @@ class DiscussChannel(models.Model):
             return False
         return self.channel_type == 'chat' and bot.id in self.channel_member_ids.partner_id.ids
 
+    def _agent_has_session(self):
+        """Whether this channel has ever been dispatched to the agent
+        before — used to fire the one-time welcome message on first open
+        (see res_users.action_open_ai_assistant_chat), and nothing else:
+        a session existing doesn't imply the tenant is configured/within
+        budget, just that this isn't the very first interaction."""
+        self.ensure_one()
+        return bool(self.env['saas_ai_agent.session'].sudo().search_count([('channel_id', '=', self.id)]))
+
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
         self._maybe_notify_agent(message, kwargs)
@@ -59,6 +68,19 @@ class DiscussChannel(models.Model):
         body = html2plaintext(message.body or '').strip()
         if not body:
             return
+        self._dispatch_to_agent(user, message=body)
+
+    def _agent_trigger_welcome(self, user):
+        """Fired once per channel, from action_open_ai_assistant_chat the
+        first time it's opened — the agent introduces itself proactively
+        instead of waiting for the user to type first, mirroring OdooBot's
+        own unprompted welcome message."""
+        self.ensure_one()
+        self._dispatch_to_agent(user, message="", welcome=True)
+
+    def _dispatch_to_agent(self, user, message, welcome=False):
+        self.ensure_one()
+        bot = self.env.ref('saas_ai_agent.partner_agent_bot')
 
         if not AGENT_WEBHOOK_SECRET:
             logger.warning(
@@ -67,35 +89,42 @@ class DiscussChannel(models.Model):
             )
             return
 
-        # BYOK: fail fast with a friendly message instead of round-tripping
-        # to the agent pod just to have its first SDK call fail. Checked
-        # here (not only agent-side) so a misconfigured tenant gets instant
-        # feedback rather than a silent multi-second timeout.
         llm_config = self.env['res.config.settings'].sudo()._aei_assistant_resolve_llm_config()
-        if not llm_config['configured']:
-            self.with_context(mail_post_autofollow=False).message_post(
-                body=(
+        if not llm_config['configured'] and not llm_config.get('trial_available'):
+            # Either never configured, or the trial budget on AEI's own
+            # key ran out — either way there's no key to run this turn
+            # with. Skip the agent pod entirely and say so directly;
+            # distinguish the two cases so "never tried" doesn't sound
+            # like "you burned through your trial".
+            if llm_config.get('trial'):
+                text = (
+                    "Se acabó el crédito de prueba — para seguir usándome, "
+                    "configura tu propia API key en Ajustes > AEI Assistant."
+                )
+            else:
+                text = (
                     "Todavía no configuraste tu API key de IA — anda a "
                     "Ajustes > AEI Assistant para activarme."
-                ),
-                author_id=bot.id,
-                message_type='comment',
-                subtype_xmlid='mail.mt_comment',
+                )
+            self.with_context(mail_post_autofollow=False).message_post(
+                body=text, author_id=bot.id,
+                message_type='comment', subtype_xmlid='mail.mt_comment',
             )
             return
 
         raw_key = self.env['saas_ai_agent.session']._issue_key(self, user)
 
-        # Fires after the transaction that created `message` commits, so the
-        # agent's own MCP reads can already see it; never blocks or aborts
-        # the user's own request if the agent pod is unreachable.
+        # Fires after the transaction commits, so the agent's own MCP reads
+        # can already see any user message; never blocks or aborts the
+        # user's own request if the agent pod is unreachable.
         channel_id = self.id
         payload = {
             "channel_id": channel_id,
-            "message": body,
+            "message": message,
             "user_id": user.id,
             "user_login": user.login,
             "mcp_key": raw_key,
+            "welcome": welcome,
         }
         self.env.cr.postcommit.add(lambda: _post_hook(channel_id, payload))
 
