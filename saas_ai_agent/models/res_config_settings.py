@@ -32,47 +32,48 @@ class ResConfigSettings(models.TransientModel):
             ('anthropic', "Anthropic (Claude)"),
             ('deepseek', "DeepSeek"),
             ('moonshot', "Moonshot / Kimi"),
-            ('custom', "Custom / self-hosted (Ollama, ...)"),
+            ('custom', "Personalizado / self-hosted (Ollama, ...)"),
         ],
-        string="AI Provider",
+        string="Proveedor de IA",
         config_parameter='saas_ai_agent.provider',
         default='anthropic',
-        help="BYOK: aei_assistant only runs against your own API key — AEI "
-             "never sees or pays for your LLM usage.",
+        help="BYOK: AEI Assistant funciona solo con tu propia API key — AEI "
+             "nunca ve ni paga tu uso del modelo de IA.",
     )
     aei_assistant_api_key = fields.Char(
-        string="API Key",
+        string="Clave API",
         config_parameter='saas_ai_agent.api_key',
-        help="Your own API key for the selected provider. The assistant "
-             "stays disabled until this is set.",
+        help="Tu propia API key del proveedor seleccionado. El asistente "
+             "permanece desactivado hasta que la configures.",
     )
     aei_assistant_base_url = fields.Char(
-        string="Custom Endpoint URL",
+        string="URL del endpoint personalizado",
         config_parameter='saas_ai_agent.base_url',
-        help="Required only for 'Custom / self-hosted' — e.g. "
-             "http://your-ollama-host:11434 (must expose an "
-             "Anthropic-compatible /v1/messages endpoint).",
+        help="Solo necesario para 'Personalizado / self-hosted' — p. ej. "
+             "http://tu-host-ollama:11434 (debe exponer un endpoint "
+             "/v1/messages compatible con Anthropic).",
     )
     aei_assistant_model = fields.Char(
-        string="Model",
+        string="Modelo",
         config_parameter='saas_ai_agent.model',
-        help="Leave empty to use the provider's default model.",
+        help="Déjalo vacío para usar el modelo por defecto del proveedor.",
     )
     aei_assistant_trial_used_usd = fields.Float(
-        string="Trial Spend Used (USD)",
+        string="Gasto de prueba usado (USD)",
         compute='_compute_aei_assistant_trial_status',
-        help="Approximate cost run up against AEI's own trial key so far "
-             "(tracked from the Claude Agent SDK's own per-turn cost "
-             "report). Resets are manual — see _aei_assistant_reset_trial.",
+        help="Costo aproximado consumido hasta ahora contra la clave de "
+             "prueba de AEI (calculado desde el reporte de costo por turno "
+             "del Claude Agent SDK). El reinicio es manual.",
     )
     aei_assistant_trial_cap_usd = fields.Float(
-        string="Trial Budget (USD)",
+        string="Presupuesto de prueba (USD)",
         config_parameter='saas_ai_agent.trial_cap_usd',
         default=TRIAL_CAP_DEFAULT_USD,
-        help="How much of AEI's own default key this tenant may use before "
-             "the assistant asks for a real API key. Sized so a new "
-             "customer can try the assistant and get help setting up their "
-             "own key without AEI's trial exposure being unbounded.",
+        help="Cuánto de la clave por defecto de AEI puede usar este tenant "
+             "antes de que el asistente le pida una API key propia. "
+             "Dimensionado para que un cliente nuevo pruebe el asistente y "
+             "reciba ayuda para configurar su clave sin que la exposición de "
+             "la prueba de AEI sea ilimitada.",
     )
 
     @api.depends('aei_assistant_api_key')

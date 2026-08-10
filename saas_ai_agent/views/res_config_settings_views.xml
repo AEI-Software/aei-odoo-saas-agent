@@ -10,36 +10,36 @@
                 <block title="AEI Assistant" name="aei_assistant_settings">
                     <setting
                         id="aei_assistant_provider"
-                        string="AI Provider"
-                        help="Bring your own key — aei_assistant runs only against your own API key, never AEI's."
+                        string="Proveedor de IA"
+                        help="Usa tu propia clave — AEI Assistant funciona solo con tu propia API key, nunca la de AEI."
                     >
                         <field name="aei_assistant_provider"/>
                         <div class="content-group mt16" invisible="aei_assistant_provider != 'custom'">
                             <div class="row">
-                                <label class="col-lg-3 o_light_label" for="aei_assistant_base_url" string="Endpoint URL"/>
-                                <field name="aei_assistant_base_url" placeholder="http://your-ollama-host:11434"/>
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_base_url" string="URL del endpoint"/>
+                                <field name="aei_assistant_base_url" placeholder="http://tu-host-ollama:11434"/>
                             </div>
                         </div>
                         <div class="content-group mt16">
                             <div class="row">
-                                <label class="col-lg-3 o_light_label" for="aei_assistant_api_key" string="API Key"/>
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_api_key" string="Clave API"/>
                                 <field name="aei_assistant_api_key" password="True"/>
                             </div>
                             <div class="row">
-                                <label class="col-lg-3 o_light_label" for="aei_assistant_model" string="Model"/>
-                                <field name="aei_assistant_model" placeholder="(provider default)"/>
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_model" string="Modelo"/>
+                                <field name="aei_assistant_model" placeholder="(por defecto del proveedor)"/>
                             </div>
                         </div>
                     </setting>
                     <setting
                         id="aei_assistant_trial"
-                        string="Trial (no key set yet)"
-                        help="Until you set your own key above, the assistant runs on AEI's own trial key, within this budget."
+                        string="Prueba (aún sin clave)"
+                        help="Hasta que configures tu propia clave arriba, el asistente funciona con la clave de prueba de AEI, dentro de este presupuesto."
                         invisible="aei_assistant_api_key"
                     >
                         <div class="content-group mt16">
                             <div class="row">
-                                <label class="col-lg-3 o_light_label" for="aei_assistant_trial_used_usd" string="Used so far"/>
+                                <label class="col-lg-3 o_light_label" for="aei_assistant_trial_used_usd" string="Usado hasta ahora"/>
                                 <field name="aei_assistant_trial_used_usd" readonly="1"/>
                                 <span class="mx-2">/</span>
                                 <field name="aei_assistant_trial_cap_usd" class="w-25"/>
