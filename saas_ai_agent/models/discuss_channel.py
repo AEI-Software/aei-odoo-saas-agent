@@ -4,6 +4,8 @@ import os
 
 import requests
 
+from markupsafe import Markup
+
 from odoo import models
 from odoo.tools import html2plaintext
 
@@ -71,12 +73,36 @@ class DiscussChannel(models.Model):
         self._dispatch_to_agent(user, message=body)
 
     def _agent_trigger_welcome(self, user):
-        """Fired once per channel, from action_open_ai_assistant_chat the
-        first time it's opened — the agent introduces itself proactively
-        instead of waiting for the user to type first, mirroring OdooBot's
-        own unprompted welcome message."""
+        """Post the AEI Assistant's self-introduction into the DM, once.
+
+        Posts a LOCAL, inline message from the bot partner — exactly how
+        OdooBot does it (mail_bot._init_odoobot: channel.sudo().message_post
+        with author_id=bot, silent=True). This is deliberately NOT routed
+        through the agent pod: the earlier design dispatched the welcome over
+        HTTP to the agent, which silently produced an empty channel whenever
+        the pod/secret/LLM wasn't ready — the opposite of "announce itself".
+        A static local greeting always appears; the dynamic agent
+        conversation begins as soon as the user actually replies (that reply
+        goes through _maybe_notify_agent → _dispatch_to_agent as normal).
+        """
         self.ensure_one()
-        self._dispatch_to_agent(user, message="", welcome=True)
+        bot = self.env.ref('saas_ai_agent.partner_agent_bot')
+        body = Markup(
+            "¡Hola! Soy <b>AEI Assistant</b>, tu asistente de IA integrado en Odoo."
+            "<br/><br/>"
+            "Puedo ayudarte a configurar y operar tu instancia — siempre dentro "
+            "de tus permisos. Escríbeme por aquí y pregúntame lo que necesites."
+            "<br/><br/>"
+            "Para desbloquear todas mis capacidades, configura tu propia API key "
+            "en <b>Ajustes → AEI Assistant</b>."
+        )
+        self.sudo().with_context(mail_post_autofollow=False).message_post(
+            body=body,
+            author_id=bot.id,
+            message_type='comment',
+            silent=True,
+            subtype_xmlid='mail.mt_comment',
+        )
 
     def _dispatch_to_agent(self, user, message, welcome=False):
         self.ensure_one()
