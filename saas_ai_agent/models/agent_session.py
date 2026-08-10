@@ -10,9 +10,10 @@ class AgentSession(models.Model):
     mcp_key_id = fields.Many2one('muk_mcp.key', ondelete='set null')
     last_activity = fields.Datetime(default=fields.Datetime.now)
 
-    _sql_constraints = [
-        ('channel_unique', 'unique(channel_id)', 'One agent session per Discuss channel.'),
-    ]
+    _channel_unique = models.Constraint(
+        'unique(channel_id)',
+        'One agent session per Discuss channel.',
+    )
 
     def _issue_key(self, channel, user):
         """Mint a fresh key for this turn and revoke the previous one.
