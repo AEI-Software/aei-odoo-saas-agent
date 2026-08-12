@@ -9,6 +9,23 @@ Compatible clients include Claude Desktop, Claude Code, OpenCode,
 Cursor, Windsurf, Codex CLI, and any tool that supports the MCP
 Streamable HTTP transport.
 
+**Protocol revisions**
+
+The server serves `2026-07-28`, `2025-11-25` and `2025-06-18`, resolved
+per request from the `_meta` block, the `MCP-Protocol-Version` header,
+or the revision the session negotiated -- in that order.
+
+`2026-07-28` is stateless: it has no `initialize` handshake and no
+session, identifies every request by its bearer key, replaces
+capability discovery with `server/discover`, and drops `ping`,
+`logging/setLevel` and the `GET /mcp` notification stream. Requests on
+that revision must carry `protocolVersion`, `clientInfo` and
+`clientCapabilities` in `_meta`.
+
+`2025-03-26` is no longer served. A client asking for it is answered
+`2025-06-18` rather than refused. JSON-RPC batching, removed from the
+specification in `2025-06-18`, is no longer accepted on any revision.
+
 ## Configuration
 
 **Creating an MCP Key**
@@ -42,6 +59,35 @@ on top, so a key can never exceed the permissions of its owning user.
 
 Each key has a configurable rate limit (requests per minute). Set to
 0 for unlimited. The default is 60 requests per minute.
+
+## Multi-database Hosts
+
+The `/mcp` endpoint and everything under it (including the `muk_mcp_oauth`
+`token`, `authorize`, and `register` endpoints) is reached without an Odoo
+session cookie -- the bearer key or token is opaque until a database is loaded.
+On a host that serves **several databases** behind one origin, such a request
+cannot be mapped to a database and Odoo answers `404`. On a single-database host
+(one database per domain, `db_name` set, or `dbfilter = ^%h$`) there is nothing
+to do -- this is the recommended setup. (The root `/.well-known/oauth-*`
+discovery documents sit outside `/mcp`; `muk_mcp_oauth` resolves them the same
+way when it is also loaded server-wide -- otherwise, since external clients send
+no selector to them, serve those via a single-database host.)
+
+Where a multi-database origin is unavoidable, the target database can be
+selected per request in one of two ways:
+
+- **`X-Odoo-Database` header** -- handled by Odoo core, works out of the box.
+- **`?db=<name>` query parameter** -- handled by this module. Because it must
+  resolve the database *before* one is selected, the module has to be loaded
+  **server-wide** so its request hook runs at server start (the same
+  requirement as `muk_rest`):
+
+  Parameter: `--load=web,muk_mcp`
+  (or `server_wide_modules = web,muk_mcp` in the configuration file).
+
+Without a selector on a multi-database host, the request falls through to
+Odoo's standard database handling. The selector name defaults to `db` and can
+be changed with the `mcp_db_param` config option.
 
 ## Client Setup
 
@@ -180,10 +226,10 @@ pane to run the current tool.
 ## Usage
 
 Once connected, the AI client automatically discovers all available
-tools via the `tools/list` MCP method. The module ships with 17
+tools via the `tools/list` MCP method. The module ships with 18
 built-in tools organized into two categories:
 
-**Read Tools (12)**
+**Read Tools (13)**
 
 - `list_models` -- Discover available Odoo models by substring search.
 - `list_modules` -- List installed modules with versions and states.
@@ -208,6 +254,20 @@ built-in tools organized into two categories:
   paths use `/` to traverse relations (e.g. `partner_id/name`,
   `order_line/product_id/default_code`). Honours record rules and
   field access through Odoo's `export_data`.
+- `read_resource` -- Fetch the bytes of a resource by `odoo://` URI
+  and return them as a typed MCP content block (`text` for textual
+  mimetypes, `image` / `audio` for media, `resource` with a base64
+  blob for everything else). Two URI shapes are supported:
+  `odoo://attachment/<id>` for an `ir.attachment` row, and
+  `odoo://record/<model>/<id>/<field>` for a Binary field on a
+  record. Mimetype is auto-detected when not stored.
+
+> **Binary fields are returned as URIs.** Both `read_records` and
+> `search_read` substitute Binary field values with
+> `odoo://record/<model>/<id>/<field>` references rather than
+> shipping base64 inline — the LLM gets a small stable handle and
+> only materializes bytes (via `read_resource` or the protocol-level
+> `resources/read`) when it actually needs to *see* the file.
 
 **Write Tools (5)**
 
@@ -219,6 +279,89 @@ built-in tools organized into two categories:
   chatter thread.
 - `call_method` -- Call any public method on a model or recordset
   (private methods starting with `_` are blocked for safety).
+
+## Prompts
+
+Beyond tools, the server exposes MCP **prompts** -- reusable, user-invoked
+templates the client surfaces as slash commands (e.g.
+`/mcp__odoo__summarize_record` in Claude Code). Unlike tools, which the
+model calls on its own, a prompt is chosen by the user: the client collects
+its declared arguments and the server expands it into chat messages via the
+`prompts/get` method.
+
+The module ships two examples:
+
+- `summarize_record` (Python) -- summarize a single record given a `model`
+  and `record_id`.
+- `activities_today` (database) -- list the current user's activities that
+  are due today or overdue.
+
+Any argument named `model` is auto-completed with matching model names
+through the MCP `completion/complete` method. Like tools, prompts can be
+authored two ways, and a database prompt shadows a Python prompt of the
+same name.
+
+### Python Prompts -- From Other Addons
+
+Inherit `muk_mcp.mixin` and decorate a method with `@mcp_prompt`. The
+method returns the prompt text (a string) or a list of message dicts;
+declared arguments arrive as keyword arguments.
+
+```python
+from odoo import api, models
+
+from odoo.addons.muk_mcp.core.prompt import mcp_prompt
+
+
+class MCPMixin(models.AbstractModel):
+    _inherit = 'muk_mcp.mixin'
+
+    @api.model
+    @mcp_prompt(
+        name='summarize_record',
+        title='Summarize a record',
+        description='Summarize a single Odoo record.',
+        arguments=[
+            {'name': 'model', 'description': "e.g. 'sale.order'.", 'required': True},
+            {'name': 'record_id', 'description': 'Record id.', 'required': True},
+        ],
+    )
+    def _mcp_prompt_summarize_record(self, model, record_id):
+        return (
+            "Summarize the %s record with id %s. Call read_records, "
+            "then write a short factual summary." % (model, record_id)
+        )
+```
+
+### UI / Database Prompts
+
+Create prompts in the backend at **Settings > MCP > Prompts**, or ship them
+as `muk_mcp.prompt` data records. Each prompt has a name, title,
+description, an **Arguments** JSON array, and a **Body** of Python
+evaluated in a sandboxed `safe_eval` context (same variables as UI tools:
+`env`, `arguments`, `json`, `UserError`, `logger`). Set `result` to the
+prompt text or a list of message dicts.
+
+```xml
+<record id="prompt_summarize_record" model="muk_mcp.prompt">
+    <field name="name">summarize_record</field>
+    <field name="title">Summarize a record</field>
+    <field name="description">Summarize a single Odoo record.</field>
+    <field name="arguments">[
+        {"name": "model", "description": "e.g. 'sale.order'.", "required": true},
+        {"name": "record_id", "description": "Record id.", "required": true}
+    ]</field>
+    <field name="body">result = (
+    "Summarize the %s record with id %s."
+    % (arguments['model'], arguments['record_id'])
+)
+</field>
+</record>
+```
+
+Required arguments are validated before the body runs, so the body can read
+them directly (`arguments['model']`); optional arguments use
+`arguments.get('name')`.
 
 ## Extending the Tool Set
 
@@ -327,13 +470,20 @@ Step 3 -- restart or upgrade the module. The tool appears in the next
 
 **Helpers available on `muk_mcp.mixin`**
 
-Because your class inherits the mixin, you get two small helpers for
+Because your class inherits the mixin, you get this small helper for
 free:
 
 - `self._resolve_model(name)` -- returns `self.env[name]` and raises
   `UserError` if the model does not exist.
-- `self._normalize_ids(ids)` -- accepts `None`, a single int, or a
-  list of ints; always returns a list.
+
+For input normalisation, import the module-level helpers from
+`odoo.addons.muk_mcp.tools.parser`:
+
+- `normalize_ids(ids)` -- accepts `None`, a single int, or a list of
+  ints; always returns a list.
+- `coerce_json_value(value)` -- parses JSON or Python-literal strings
+  iteratively (handles double-encoded payloads from proxies); returns
+  non-string input unchanged.
 
 **Testing your tools**
 
@@ -381,7 +531,24 @@ cleaned up based on the configured retention period.
 
 **Sessions**
 
-The server maintains stateful sessions per the MCP specification.
+Sessions belong to the `2025-06-18` and `2025-11-25` revisions, which
+open one through the `initialize` handshake; the stateless
+`2026-07-28` revision has none and identifies each request by its
+bearer key alone. Each session records the revision it negotiated, so
+a client that sends no `MCP-Protocol-Version` header is still served
+under the right one.
+
 Active sessions are visible at **Settings > MCP Server > Sessions** (in
 debug mode) and can be revoked from user preferences. Sessions are
 automatically cleaned up after the configured timeout.
+
+**Allowed Origins**
+
+Browser-originated requests are checked against an allow-list to guard
+against DNS rebinding, as the Streamable HTTP transport requires. A
+request without an `Origin` header is not browser-initiated and passes
+untouched; a request whose origin is not allowed is answered `403`.
+
+The instance's own base URL is always allowed. Add more with the
+`muk_mcp.allowed_origins` system parameter (comma-separated), or set
+`muk_mcp.allow_any_origin` to `True` to disable the check entirely.

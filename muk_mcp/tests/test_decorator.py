@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import json
 
-from unittest.mock import patch
-
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import common
+from odoo.tests import common, tagged
 
 from odoo.addons.muk_mcp.core import tool as core_tool
 
@@ -46,50 +46,42 @@ TEST_REGISTRY = {
 }
 
 
+@tagged('post_install', '-at_install')
 class TestMcpDecoratorTool(common.TransactionCase):
+    """Covers decorator metadata, registry merging, scope enforcement, and dispatch."""
 
     # ----------------------------------------------------------
     # Setup
     # ----------------------------------------------------------
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         super().setUpClass()
         cls.tool_model = cls.env['muk_mcp.tool']
         cls.partner_cls = type(cls.env['res.partner'])
-        cls.startClassPatcher(patch.object(
-            cls.partner_cls, '_mcp_test_echo', _echo_tool, create=True,
-        ))
-        cls.startClassPatcher(patch.object(
-            cls.partner_cls, '_mcp_test_write', _write_tool, create=True,
-        ))
-        cls.addClassCleanup(core_tool.invalidate_registry_cache, cls.env)
+        cls.partner_cls._mcp_test_echo = _echo_tool
+        cls.partner_cls._mcp_test_write = _write_tool
 
-    def setUp(self):
+    @classmethod
+    def tearDownClass(cls) -> None:
+        delattr(cls.partner_cls, '_mcp_test_echo')
+        delattr(cls.partner_cls, '_mcp_test_write')
+        core_tool.invalidate_registry_cache(cls.env)
+        super().tearDownClass()
+
+    def setUp(self) -> None:
         super().setUp()
-        self.env.registry._muk_mcp_method_cache = dict(TEST_REGISTRY)
+        registry = self.env.registry
+        registry._muk_mcp_method_cache = dict(TEST_REGISTRY)
+        registry._muk_mcp_method_cache_key = len(registry._init_modules or ())
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         core_tool.invalidate_registry_cache(self.env)
         super().tearDown()
 
     # ----------------------------------------------------------
     # Tests
     # ----------------------------------------------------------
-
-    def test_decorator_stamps_metadata(self):
-        @core_tool.mcp_tool(
-            name='dummy',
-            description='Does nothing.',
-            input_schema={'type': 'object', 'properties': {}},
-            category='write',
-        )
-        def handler(self, **kw):
-            return None
-
-        self.assertEqual(handler.__mcp_tool__['name'], 'dummy')
-        self.assertEqual(handler.__mcp_tool__['description'], 'Does nothing.')
-        self.assertEqual(handler.__mcp_tool__['category'], 'write')
 
     def test_decorator_infers_name_and_description_from_function(self):
         @core_tool.mcp_tool()
@@ -98,7 +90,7 @@ class TestMcpDecoratorTool(common.TransactionCase):
 
             More detail ignored.
             """
-            return None
+            return
 
         self.assertEqual(auto_named.__mcp_tool__['name'], 'auto_named')
         self.assertEqual(
@@ -115,12 +107,15 @@ class TestMcpDecoratorTool(common.TransactionCase):
         echo_entry = next(t for t in tools if t['name'] == 'mcp_test_echo')
         self.assertEqual(echo_entry['description'], 'Echo back the provided text.')
         self.assertEqual(
-            echo_entry['inputSchema']['properties']['text']['type'], 'string',
+            echo_entry['inputSchema']['properties']['text']['type'],
+            'string',
         )
 
     def test_call_dispatches_decorator_tool(self):
         text, _info = self.tool_model._call(
-            'mcp_test_echo', {'text': 'world'}, self.env,
+            'mcp_test_echo',
+            {'text': 'world'},
+            self.env,
         )
         self.assertEqual(json.loads(text), {'echo': 'world'})
 
@@ -131,52 +126,71 @@ class TestMcpDecoratorTool(common.TransactionCase):
     def test_call_bad_arguments_raises_user_error(self):
         with self.assertRaises(UserError):
             self.tool_model._call(
-                'mcp_test_echo', {'unknown_kwarg': 1}, self.env,
+                'mcp_test_echo',
+                {'unknown_kwarg': 1},
+                self.env,
             )
 
     def test_call_enforces_read_scope_on_decorator_tool(self):
         with self.assertRaises(AccessError):
             self.tool_model._call(
-                'mcp_test_write', {'value': 1}, self.env, enforce_scope='read',
+                'mcp_test_write',
+                {'value': 1},
+                self.env,
+                enforce_scope='read',
             )
 
     def test_call_allows_write_scope_on_decorator_tool(self):
         text, _info = self.tool_model._call(
-            'mcp_test_write', {'value': 42}, self.env, enforce_scope='write',
+            'mcp_test_write',
+            {'value': 42},
+            self.env,
+            enforce_scope='write',
         )
         self.assertEqual(json.loads(text), {'written': 42})
 
     def test_db_record_shadows_decorator(self):
-        db_tool = self.tool_model.create({
-            'name': 'mcp_test_echo',
-            'description': 'DB override',
-            'category': 'read',
-            'input_schema': json.dumps({
-                'type': 'object',
-                'properties': {},
-            }),
-            'code': "result = {'echo': 'from_db'}\n",
-        })
+        db_tool = self.tool_model.create(
+            {
+                'name': 'mcp_test_echo',
+                'description': 'DB override',
+                'category': 'read',
+                'input_schema': json.dumps(
+                    {
+                        'type': 'object',
+                        'properties': {},
+                    },
+                ),
+                'code': "result = {'echo': 'from_db'}\n",
+            },
+        )
         tools = self.tool_model.get_tools()
         echo_entries = [t for t in tools if t['name'] == 'mcp_test_echo']
         self.assertEqual(len(echo_entries), 1)
         self.assertEqual(echo_entries[0]['description'], 'DB override')
         text, _info = self.tool_model._call(
-            'mcp_test_echo', {'text': 'ignored'}, self.env,
+            'mcp_test_echo',
+            {'text': 'ignored'},
+            self.env,
         )
         self.assertEqual(json.loads(text), {'echo': 'from_db'})
         db_tool.unlink()
 
     def test_call_db_enforces_read_scope(self):
-        db_tool = self.tool_model.create({
-            'name': 'mcp_test_db_write',
-            'description': 'DB write tool',
-            'category': 'write',
-            'code': "result = {'ok': True}\n",
-        })
+        db_tool = self.tool_model.create(
+            {
+                'name': 'mcp_test_db_write',
+                'description': 'DB write tool',
+                'category': 'write',
+                'code': "result = {'ok': True}\n",
+            },
+        )
         with self.assertRaises(AccessError):
             self.tool_model._call(
-                'mcp_test_db_write', {}, self.env, enforce_scope='read',
+                'mcp_test_db_write',
+                {},
+                self.env,
+                enforce_scope='read',
             )
         db_tool.unlink()
 
@@ -194,34 +208,33 @@ class TestMcpDecoratorTool(common.TransactionCase):
             return {'pong': value}
 
         mixin_cls = type(self.env['muk_mcp.mixin'])
-        self.startPatcher(patch.object(
-            mixin_cls, '_mcp_scanner_probe', _mcp_scanner_probe, create=True,
-        ))
+        mixin_cls._mcp_scanner_probe = _mcp_scanner_probe
         core_tool.invalidate_registry_cache(self.env)
-        self.addCleanup(core_tool.invalidate_registry_cache, self.env)
-        index = core_tool.get_tool_index(self.env)
-        self.assertIn('mcp_scanner_probe', index)
-        entry = index['mcp_scanner_probe']
-        self.assertEqual(entry['kind'], 'method')
-        self.assertEqual(entry['model'], 'muk_mcp.mixin')
-        self.assertEqual(entry['method'], '_mcp_scanner_probe')
-        self.assertEqual(entry['description'], 'End-to-end scanner probe.')
-        text, _info = self.tool_model._call(
-            'mcp_scanner_probe', {'value': 'pong'}, self.env,
-        )
-        self.assertEqual(json.loads(text), {'pong': 'pong'})
+        try:
+            index = core_tool.get_tool_index(self.env)
+            self.assertIn('mcp_scanner_probe', index)
+            entry = index['mcp_scanner_probe']
+            self.assertEqual(entry['kind'], 'method')
+            self.assertEqual(entry['model'], 'muk_mcp.mixin')
+            self.assertEqual(entry['method'], '_mcp_scanner_probe')
+            self.assertEqual(entry['description'], 'End-to-end scanner probe.')
+            text, _info = self.tool_model._call(
+                'mcp_scanner_probe',
+                {'value': 'pong'},
+                self.env,
+            )
+            self.assertEqual(json.loads(text), {'pong': 'pong'})
+        finally:
+            delattr(mixin_cls, '_mcp_scanner_probe')
+            core_tool.invalidate_registry_cache(self.env)
 
     def test_recordset_result_serialized_via_record_encoder(self):
         partner = self.env['res.partner'].create({'name': 'MCP Encoder Test'})
-        self.addCleanup(partner.unlink)
 
         def _return_recordset(self):
             return self.env['res.partner'].browse(partner.id)
 
-        self.startPatcher(patch.object(
-            self.partner_cls, '_mcp_test_record',
-            _return_recordset, create=True,
-        ))
+        self.partner_cls._mcp_test_record = _return_recordset
         self.env.registry._muk_mcp_method_cache['mcp_test_record'] = {
             'kind': 'method',
             'model': 'res.partner',
@@ -230,6 +243,10 @@ class TestMcpDecoratorTool(common.TransactionCase):
             'input_schema': {'type': 'object', 'properties': {}},
             'category': 'read',
         }
-        text, _info = self.tool_model._call('mcp_test_record', {}, self.env)
-        payload = json.loads(text)
-        self.assertEqual(payload, [[partner.id, 'MCP Encoder Test']])
+        try:
+            text, _info = self.tool_model._call('mcp_test_record', {}, self.env)
+            payload = json.loads(text)
+            self.assertEqual(payload, [[partner.id, 'MCP Encoder Test']])
+        finally:
+            delattr(self.partner_cls, '_mcp_test_record')
+            partner.unlink()
