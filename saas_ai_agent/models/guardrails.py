@@ -19,9 +19,9 @@ class ResUsersGuardrail(models.Model):
     def _check_not_mcp_agent(self):
         if self.env.context.get('mcp_name'):
             raise UserError(_(
-                "No puedo crear ni modificar usuarios: cada usuario tiene un "
-                "costo para el cliente. Pide a un administrador que lo haga "
-                "desde la interfaz normal de Odoo."
+                "I cannot create or modify users: every user has a cost for "
+                "the customer. Ask an administrator to do it from the normal "
+                "Odoo interface."
             ))
 
     @api.model_create_multi
@@ -41,9 +41,9 @@ class IrModuleModuleGuardrail(models.Model):
     def _check_not_mcp_agent(self):
         if self.env.context.get('mcp_name'):
             raise UserError(_(
-                "No puedo instalar, actualizar ni desinstalar apps: esta "
-                "instancia solo incluye las apps de tu plan actual. Pide un "
-                "upgrade de plan o contacta a soporte."
+                "I cannot install, upgrade or uninstall apps: this instance "
+                "only includes the apps of your current plan. Request a plan "
+                "upgrade or contact support."
             ))
 
     def button_install(self):

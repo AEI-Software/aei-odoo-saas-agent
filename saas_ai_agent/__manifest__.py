@@ -1,6 +1,6 @@
 {
     'name': 'AEI SaaS AI Agent',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Tenant AI agent reachable as a Discuss DM, scoped to the RBAC of the chatting user',
     'category': 'Technical',
     'author': 'AEI Software',

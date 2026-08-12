@@ -6,7 +6,7 @@ import requests
 
 from markupsafe import Markup
 
-from odoo import models
+from odoo import _, models
 from odoo.tools import html2plaintext
 
 logger = logging.getLogger(__name__)
@@ -26,13 +26,16 @@ class DiscussChannel(models.Model):
 
     def _agent_get_or_create_channel(self, user):
         """Get-or-create the 1:1 DM between `user` and the AI agent bot
-        partner — wraps core channel_get(), the same method Discuss itself
-        uses for any "OdooBot"-style chat (verified against the actual
-        Odoo 18 image; some docs describe a differently-named
-        _get_or_create_chat, which is the Odoo 19 name).
+        partner — wraps core _get_or_create_chat(), the same method
+        mail_bot._init_odoobot uses in Odoo 19 (channel_get was removed in
+        19.0; it crashed the proactive welcome on every tenant until
+        2026-08-12, SUB00264). Passing both partner ids mirrors mail_bot;
+        with_user(user) makes the pin/last_interest apply to that user.
         """
         bot = self.env.ref('saas_ai_agent.partner_agent_bot')
-        return self.with_user(user).channel_get(partners_to=[bot.id], pin=True)
+        return self.with_user(user)._get_or_create_chat(
+            [bot.id, user.partner_id.id], pin=True,
+        )
 
     def _is_agent_channel(self):
         self.ensure_one()
@@ -87,14 +90,16 @@ class DiscussChannel(models.Model):
         """
         self.ensure_one()
         bot = self.env.ref('saas_ai_agent.partner_agent_bot')
-        body = Markup(
-            "¡Hola! Soy <b>AEI Assistant</b>, tu asistente de IA integrado en Odoo."
-            "<br/><br/>"
-            "Puedo ayudarte a configurar y operar tu instancia — siempre dentro "
-            "de tus permisos. Escríbeme por aquí y pregúntame lo que necesites."
-            "<br/><br/>"
-            "Para desbloquear todas mis capacidades, configura tu propia API key "
-            "en <b>Ajustes → AEI Assistant</b>."
+        # Source strings are English; i18n/es.po carries the Spanish shown
+        # to es_* tenants. Markup placeholders keep the tags out of the
+        # translatable text (mail_bot's own pattern).
+        body = Markup("%s<br/><br/>%s<br/><br/>%s") % (
+            _("Hello! I am %s, your AI assistant built into Odoo.",
+              Markup("<b>AEI Assistant</b>")),
+            _("I can help you set up and operate your system — always within "
+              "your own permissions. Write to me here and ask me anything."),
+            _("To unlock all my capabilities, configure your own API key "
+              "under %s.", Markup("<b>Settings → AEI Assistant</b>")),
         )
         self.sudo().with_context(mail_post_autofollow=False).message_post(
             body=body,
@@ -123,14 +128,14 @@ class DiscussChannel(models.Model):
             # distinguish the two cases so "never tried" doesn't sound
             # like "you burned through your trial".
             if llm_config.get('trial'):
-                text = (
-                    "Se acabó el crédito de prueba — para seguir usándome, "
-                    "configura tu propia API key en Ajustes > AEI Assistant."
+                text = _(
+                    "The trial credit has run out — to keep using me, "
+                    "configure your own API key under Settings > AEI Assistant."
                 )
             else:
-                text = (
-                    "Todavía no configuraste tu API key de IA — anda a "
-                    "Ajustes > AEI Assistant para activarme."
+                text = _(
+                    "You have not configured your AI API key yet — go to "
+                    "Settings > AEI Assistant to activate me."
                 )
             self.with_context(mail_post_autofollow=False).message_post(
                 body=text, author_id=bot.id,

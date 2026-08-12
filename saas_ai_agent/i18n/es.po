@@ -1,0 +1,215 @@
+# Translation of AEI SaaS AI Agent to Spanish (base for es_BO / es_419).
+# Source strings are English; this file carries the Spanish UI shown to
+# es_* tenants (Odoo loads es.po for any es_* language without its own po).
+msgid ""
+msgstr ""
+"Project-Id-Version: saas_ai_agent 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: AEI Software\n"
+"Language-Team: AEI Software\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_provider
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "AI Provider"
+msgstr "Proveedor de IA"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_api_key
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "API Key"
+msgstr "Clave API"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_base_url
+msgid "Custom Endpoint URL"
+msgstr "URL del endpoint personalizado"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields.selection,name:saas_ai_agent.selection__res_config_settings__aei_assistant_provider__custom
+msgid "Custom / self-hosted (Ollama, ...)"
+msgstr "Personalizado / self-hosted (Ollama, ...)"
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Endpoint URL"
+msgstr "URL del endpoint"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_model
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Model"
+msgstr "Modelo"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_trial_used_usd
+msgid "Trial Spend Used (USD)"
+msgstr "Gasto de prueba usado (USD)"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_config_settings__aei_assistant_trial_cap_usd
+msgid "Trial Budget (USD)"
+msgstr "Presupuesto de prueba (USD)"
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Trial (no key yet)"
+msgstr "Prueba (aún sin clave)"
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Used so far"
+msgstr "Usado hasta ahora"
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Bring your own key — AEI Assistant only works with your own API key, never AEI's."
+msgstr "Usa tu propia clave — AEI Assistant funciona solo con tu propia API key, nunca la de AEI."
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "Until you configure your own key above, the assistant runs on AEI's trial key, within this budget."
+msgstr "Hasta que configures tu propia clave arriba, el asistente funciona con la clave de prueba de AEI, dentro de este presupuesto."
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "(provider default)"
+msgstr "(por defecto del proveedor)"
+
+#. module: saas_ai_agent
+#: model_terms:ir.ui.view,arch_db:saas_ai_agent.view_res_config_settings_form
+msgid "http://your-ollama-host:11434"
+msgstr "http://tu-host-ollama:11434"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_provider
+msgid ""
+"BYOK: AEI Assistant only works with your own API key — AEI never sees nor "
+"pays for your AI model usage."
+msgstr ""
+"BYOK: AEI Assistant funciona solo con tu propia API key — AEI nunca ve ni "
+"paga tu uso del modelo de IA."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_api_key
+msgid ""
+"Your own API key for the selected provider. The assistant stays disabled "
+"until you configure it."
+msgstr ""
+"Tu propia API key del proveedor seleccionado. El asistente permanece "
+"desactivado hasta que la configures."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_base_url
+msgid ""
+"Only needed for 'Custom / self-hosted' — e.g. http://your-ollama-host:11434 "
+"(must expose an Anthropic-compatible /v1/messages endpoint)."
+msgstr ""
+"Solo necesario para 'Personalizado / self-hosted' — p. ej. "
+"http://tu-host-ollama:11434 (debe exponer un endpoint /v1/messages "
+"compatible con Anthropic)."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_model
+msgid "Leave empty to use the provider's default model."
+msgstr "Déjalo vacío para usar el modelo por defecto del proveedor."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_trial_used_usd
+msgid ""
+"Approximate cost consumed so far against AEI's trial key (computed from the "
+"Claude Agent SDK's per-turn cost report). Resetting it is manual."
+msgstr ""
+"Costo aproximado consumido hasta ahora contra la clave de prueba de AEI "
+"(calculado desde el reporte de costo por turno del Claude Agent SDK). El "
+"reinicio es manual."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_config_settings__aei_assistant_trial_cap_usd
+msgid ""
+"How much of AEI's default key this tenant may use before the assistant asks "
+"for their own API key. Sized so a new customer can try the assistant and "
+"get help configuring their key without AEI's trial exposure being unlimited."
+msgstr ""
+"Cuánto de la clave por defecto de AEI puede usar este tenant antes de que "
+"el asistente le pida una API key propia. Dimensionado para que un cliente "
+"nuevo pruebe el asistente y reciba ayuda para configurar su clave sin que "
+"la exposición de la prueba de AEI sea ilimitada."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid "Hello! I am %s, your AI assistant built into Odoo."
+msgstr "¡Hola! Soy %s, tu asistente de IA integrado en Odoo."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid ""
+"I can help you set up and operate your system — always within your own "
+"permissions. Write to me here and ask me anything."
+msgstr ""
+"Puedo ayudarte a configurar y operar tu sistema — siempre dentro de tus "
+"permisos. Escríbeme por aquí y pregúntame lo que necesites."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid "To unlock all my capabilities, configure your own API key under %s."
+msgstr "Para desbloquear todas mis capacidades, configura tu propia API key en %s."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid ""
+"The trial credit has run out — to keep using me, configure your own API key "
+"under Settings > AEI Assistant."
+msgstr ""
+"Se acabó el crédito de prueba — para seguir usándome, configura tu propia "
+"API key en Ajustes > AEI Assistant."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid ""
+"You have not configured your AI API key yet — go to Settings > AEI "
+"Assistant to activate me."
+msgstr ""
+"Todavía no configuraste tu API key de IA — anda a Ajustes > AEI Assistant "
+"para activarme."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/guardrails.py:0
+msgid ""
+"I cannot create or modify users: every user has a cost for the customer. "
+"Ask an administrator to do it from the normal Odoo interface."
+msgstr ""
+"No puedo crear ni modificar usuarios: cada usuario tiene un costo para el "
+"cliente. Pide a un administrador que lo haga desde la interfaz normal de "
+"Odoo."
+
+#. module: saas_ai_agent
+#: code:addons/saas_ai_agent/models/guardrails.py:0
+msgid ""
+"I cannot install, upgrade or uninstall apps: this instance only includes "
+"the apps of your current plan. Request a plan upgrade or contact support."
+msgstr ""
+"No puedo instalar, actualizar ni desinstalar apps: esta instancia solo "
+"incluye las apps de tu plan actual. Pide un upgrade de plan o contacta a "
+"soporte."
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,field_description:saas_ai_agent.field_res_users__aei_assistant_welcomed
+msgid "AEI Assistant Welcomed"
+msgstr "AEI Assistant ya se presentó"
+
+#. module: saas_ai_agent
+#: model:ir.model.fields,help:saas_ai_agent.field_res_users__aei_assistant_welcomed
+msgid ""
+"Latch: True once the AEI Assistant has proactively introduced itself to "
+"this user in Discuss. Mirrors mail_bot's odoobot_state so the welcome fires "
+"exactly once per user."
+msgstr ""
+"Candado: True cuando el AEI Assistant ya se presentó proactivamente a este "
+"usuario en Conversaciones. Refleja el odoobot_state de mail_bot para que la "
+"bienvenida se dispare exactamente una vez por usuario."
