@@ -99,7 +99,7 @@ class DiscussChannel(models.Model):
             _("I can help you set up and operate your system — always within "
               "your own permissions. Write to me here and ask me anything."),
             _("To unlock all my capabilities, configure your own API key "
-              "under %s.", Markup("<b>Settings → AEI Assistant</b>")),
+              "under %s.", Markup("<b>%s</b>") % _("Settings → AEI Assistant")),
         )
         self.sudo().with_context(mail_post_autofollow=False).message_post(
             body=body,

@@ -65,7 +65,8 @@ class AgentReplyController(http.Controller):
 
         channel_id = payload.get('channel_id')
         text = (payload.get('text') or '').strip()
-        if not channel_id or not text:
+        code = payload.get('code')
+        if not channel_id or (not text and code != 'not_configured'):
             return self._json_response({'status': 'error', 'message': 'bad request'}, status=400)
 
         # If this turn ran on AEI's own trial key (no BYOK configured yet),
@@ -83,6 +84,20 @@ class AgentReplyController(http.Controller):
         if not bot:
             _logger.error("saas_ai_agent: bot partner missing, cannot post agent reply")
             return self._json_response({'status': 'error', 'message': 'bot partner missing'}, status=200)
+
+        if code == 'not_configured':
+            # The agent pod has no usable LLM config for this turn (no BYOK
+            # key and no platform trial key in its env). It sends the typed
+            # code instead of text so the message can be rendered here, in
+            # the chatting user's language — same msgid the trial-exhausted
+            # path uses, already carried by i18n/es.po.
+            partner = (channel.channel_member_ids.partner_id - bot)[:1]
+            lang = partner.lang or 'en_US'
+            env = request.env(context=dict(request.env.context, lang=lang))
+            text = env._(
+                "You have not configured your AI API key yet — go to "
+                "Settings > AEI Assistant to activate me."
+            )
 
         try:
             channel.sudo().message_post(

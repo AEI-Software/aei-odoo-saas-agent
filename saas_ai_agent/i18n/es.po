@@ -220,3 +220,9 @@ msgstr ""
 "Candado: True cuando el AEI Assistant ya se presentó proactivamente a este "
 "usuario en Conversaciones. Refleja el odoobot_state de mail_bot para que la "
 "bienvenida se dispare exactamente una vez por usuario."
+
+#. module: saas_ai_agent
+#. odoo-python
+#: code:addons/saas_ai_agent/models/discuss_channel.py:0
+msgid "Settings → AEI Assistant"
+msgstr "Ajustes → AEI Assistant"
