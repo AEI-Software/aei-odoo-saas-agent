@@ -142,11 +142,13 @@ msgstr ""
 "la exposición de la prueba de AEI sea ilimitada."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/discuss_channel.py:0
 msgid "Hello! I am %s, your AI assistant built into Odoo."
 msgstr "¡Hola! Soy %s, tu asistente de IA integrado en Odoo."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/discuss_channel.py:0
 msgid ""
 "I can help you set up and operate your system — always within your own "
@@ -156,11 +158,13 @@ msgstr ""
 "permisos. Escríbeme por aquí y pregúntame lo que necesites."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/discuss_channel.py:0
 msgid "To unlock all my capabilities, configure your own API key under %s."
 msgstr "Para desbloquear todas mis capacidades, configura tu propia API key en %s."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/discuss_channel.py:0
 msgid ""
 "The trial credit has run out — to keep using me, configure your own API key "
@@ -170,6 +174,7 @@ msgstr ""
 "API key en Ajustes > AEI Assistant."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/discuss_channel.py:0
 msgid ""
 "You have not configured your AI API key yet — go to Settings > AEI "
@@ -179,6 +184,7 @@ msgstr ""
 "para activarme."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/guardrails.py:0
 msgid ""
 "I cannot create or modify users: every user has a cost for the customer. "
@@ -189,6 +195,7 @@ msgstr ""
 "Odoo."
 
 #. module: saas_ai_agent
+#. odoo-python
 #: code:addons/saas_ai_agent/models/guardrails.py:0
 msgid ""
 "I cannot install, upgrade or uninstall apps: this instance only includes "
