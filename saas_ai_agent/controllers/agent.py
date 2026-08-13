@@ -4,6 +4,8 @@ import json
 import logging
 import os
 
+from markupsafe import Markup
+
 from odoo import http
 from odoo.http import request
 
@@ -98,6 +100,13 @@ class AgentReplyController(http.Controller):
                 "You have not configured your AI API key yet — go to "
                 "Settings > AEI Assistant to activate me."
             )
+
+        # The agent pod converts its Markdown to HTML before sending (see
+        # agent/main.py::_to_html). Older pods — and the typed messages above —
+        # send plain text, which message_post would render as a single run with
+        # every newline swallowed. Escape it and keep the line breaks.
+        if '<' not in text:
+            text = Markup('<br/>').join(text.splitlines())
 
         try:
             channel.sudo().message_post(
