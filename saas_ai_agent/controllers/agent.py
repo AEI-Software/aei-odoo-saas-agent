@@ -8,6 +8,7 @@ from markupsafe import Markup
 
 from odoo import http
 from odoo.http import request
+from odoo.tools import html_sanitize
 
 _logger = logging.getLogger(__name__)
 
@@ -101,11 +102,16 @@ class AgentReplyController(http.Controller):
                 "Settings > AEI Assistant to activate me."
             )
 
-        # The agent pod converts its Markdown to HTML before sending (see
-        # agent/main.py::_to_html). Older pods — and the typed messages above —
-        # send plain text, which message_post would render as a single run with
-        # every newline swallowed. Escape it and keep the line breaks.
-        if '<' not in text:
+        # message_post treats a plain str as text to ESCAPE (markupsafe rules),
+        # so handing it HTML produced "&lt;p&gt;..." on screen. Mark it as markup
+        # after sanitizing — html_sanitize drops scripts/styles but keeps the
+        # structure the agent sends (verified on 19.0: table/thead/tbody/tr/td/
+        # th/strong/em/ul/li/br all survive).
+        # Plain text (older agent pods, and the typed messages above) still has
+        # to keep its line breaks, which message_post would otherwise swallow.
+        if '<' in text:
+            text = html_sanitize(text)
+        else:
             text = Markup('<br/>').join(text.splitlines())
 
         try:
